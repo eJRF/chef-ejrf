@@ -1,5 +1,5 @@
 #
-# Cookbook Name:: mics
+# Cookbook Name:: ejrf
 # Recipe:: default
 #
 # Copyright 2013, Unicef Uganda 
@@ -30,32 +30,26 @@ end
 
 execute 'create virtual env' do
   cwd '/home/vagrant'
-  command 'virtualenv mics_env'
+  command 'virtualenv ejrf_env'
   action :run
 end
 
-execute 'owns the mics virtualenv' do
-  command 'sudo chown vagrant:vagrant /home/vagrant/mics_env/ -R'
+execute 'owns the ejrf virtualenv' do
+  command 'sudo chown vagrant:vagrant /home/vagrant/ejrf_env/ -R'
   action :run
 end
 
-git "/vagrant/mics/" do
-  repository "https://github.com/unicefuganda/mics.git"
-  action :checkout
+git "/vagrant/ejrf/" do
+  repository "https://github.com/eJRF/ejrf.git"
+  action :sync
 end
 
 execute 'copy localsettings.example' do
-	cwd '/vagrant/mics/mics/'
+	cwd '/vagrant/ejrf/ejrf/'
 	command "cp localsettings.py.example localsettings.py"
 	action :run
 end
 
-
-execute 'copy investigator_configs.py.example' do
-	cwd '/vagrant/mics/survey/'
-	command "cp investigator_configs.py.example investigator_configs.py"
-	action :run
-end
 
 %w{libmemcached-dev  libsasl2-dev libcloog-ppl-dev libcloog-ppl0 }.each do |pkg|
 		package pkg
@@ -89,29 +83,29 @@ end
  
 execute "create-database-user" do
     code = <<-EOH
-    psql -h localhost -U postgres -c "select * from pg_user where usename='mics'" | grep -c mics
+    psql -h localhost -U postgres -c "select * from pg_user where usename='ejrf'" | grep -c ejrf
     EOH
-    command "createuser -U postgres -h localhost -sw mics"
+    command "createuser -U postgres -h localhost -sw ejrf"
     not_if code 
 end
 
 execute "create-database" do
     exists = <<-EOH
-    psql -h localhost -U mics -c "select * from pg_user where usename='mics'" | grep -c mics
+    psql -h localhost -U ejrf -c "select * from pg_user where usename='ejrf'" | grep -c ejrf
     EOH
-    command "createdb -U mics -h localhost -O mics -E utf8 -T template0 mics"
+    command "createdb -U ejrf -h localhost -O ejrf -E utf8 -T template0 ejrf"
     not_if exists
 end
 
 execute'activating virtual env and installing pip requirements' do
-   cwd '/vagrant/mics/'
-   command "bash -c 'source /home/vagrant/mics_env/bin/activate && pip install -r pip-requires.txt'"
+   cwd '/vagrant/ejrf/'
+   command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && pip install -r pip-requirements.txt'"
    action :run
 end	
 
 execute "syncdb and run migrations" do
-    cwd '/vagrant/mics/'
-    command "bash -c 'source /home/vagrant/mics_env/bin/activate && python manage.py syncdb --noinput && python manage.py migrate'"
+    cwd '/vagrant/ejrf/'
+    command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && python manage.py syncdb --noinput && python manage.py migrate'"
     action :run
 end
 
@@ -139,12 +133,12 @@ package 'uwsgi-plugin-python' do
 	action :install
 end
 
-template '/etc/uwsgi/apps-enabled/mics.ini' do
-	source 'custom_mics_uwsgi.ini.erb'
+template '/etc/uwsgi/apps-enabled/ejrf.ini' do
+	source 'custom_ejrf_uwsgi.ini.erb'
 end
 
-template "/etc/uwsgi/apps-available/mics.ini" do
-	source 'custom_mics_uwsgi.ini.erb'
+template "/etc/uwsgi/apps-available/ejrf.ini" do
+	source 'custom_ejrf_uwsgi.ini.erb'
 end
 
 execute 'Delete /var/www/sockets' do
