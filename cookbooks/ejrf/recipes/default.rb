@@ -23,33 +23,43 @@ end
     end
 end
 
-execute 'Install virtual env' do
-  command 'pip install virtualenv'
-  action :run
+
+user node["user"]["name"] do
+    action :create
+    username node["user"]["name"]
+    password node["user"]["password"]
+    home "/home/#{node["user"]["name"]}"
 end
 
-execute 'create virtual env' do
-  cwd '/home/vagrant'
-  command 'virtualenv ejrf_env'
-  action :run
+directory "/home/#{node["user"]["name"]}/app" do
+    owner node["user"]["name"]
+    mode 00644
+    action :create
+    recursive true
 end
 
-execute 'owns the ejrf virtualenv' do
-  command 'sudo chown vagrant:vagrant /home/vagrant/ejrf_env/ -R'
-  action :run
+execute " make sure user owns his home directory" do
+    command "chown -R #{node["user"]["name"]} /home/#{node["user"]["name"]} "
+    action :run
 end
 
-git "/vagrant/ejrf/" do
-  repository "https://github.com/eJRF/ejrf.git"
-  action :sync
+
+git "/home/#{node["user"]["name"]}/app" do
+    repository node[:application][:repo]
+    destination "/home/#{node["user"]["name"]}/app/src"
+    group node["user"]["name"]
+    action :sync
 end
 
-execute 'copy localsettings.example' do
-	cwd '/vagrant/ejrf/ejrf/'
-	command "cp localsettings.py.example localsettings.py"
-	action :run
+execute "setup virtualenv for application" do
+    command "virtualenv --no-site-packages /home/#{node["user"]["name"]}/app/venv"
+    action :run
 end
 
+execute "install pip requirements" do
+    cwd "/home/#{node["user"]["name"]}/app/src"
+    command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && pip install -r pip-requirements.txt'"
+end
 
 %w{libmemcached-dev  libsasl2-dev libcloog-ppl-dev libcloog-ppl0 }.each do |pkg|
 		package pkg
@@ -83,7 +93,7 @@ end
  
 execute "create-database-user" do
     code = <<-EOH
-    psql -h localhost -U postgres -c "select * from pg_user where usename='ejrf'" | grep -c ejrf
+    psql -h localhost -U postgres -c "select * from pg_user where usename='#{node["user"]["name"]}'" | grep -c #{node["db"]["password"]}
     EOH
     command "createuser -U postgres -h localhost -sw ejrf"
     not_if code 
@@ -91,22 +101,21 @@ end
 
 execute "create-database" do
     exists = <<-EOH
-    psql -h localhost -U ejrf -c "select * from pg_user where usename='ejrf'" | grep -c ejrf
+    psql -h localhost -U ejrf -c "select * from pg_user where usename='#{node["user"]["name"]}'" | grep -c #{node["db"]["password"]}
     EOH
-    command "createdb -U ejrf -h localhost -O ejrf -E utf8 -T template0 ejrf"
+    command "createdb -U ejrf -h localhost -O ejrf -E utf8 -T template0 #{node["user"]["name"]}"
     not_if exists
 end
 
-execute'activating virtual env and installing pip requirements' do
-   cwd '/vagrant/ejrf/'
-   command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && pip install -r pip-requirements.txt'"
-   action :run
-end	
-
-execute "syncdb and run migrations" do
-    cwd '/vagrant/ejrf/'
-    command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && python manage.py syncdb --noinput && python manage.py migrate'"
+execute "syncdb " do
     action :run
+    command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py syncdb --noinput --settings=settings.prod'"
+    cwd "/home/#{node["user"]["name"]}/app/src/#{node["user"]["name"]}"
+end
+execute "migrate " do
+    action :run
+    command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py migrate --settings=settings.prod'"
+    cwd "/home/#{node["user"]["name"]}/app/src/#{node["user"]["name"]}"
 end
 
 package 'nginx' do
@@ -115,10 +124,6 @@ end
 
 template "/etc/nginx/nginx.conf" do
   source "nginx.conf.erb"
-end
-
-template "/etc/nginx/conf.d/nginx.conf" do
-  source "custom_nginx.conf.erb"
 end
 
 service 'nginx' do
@@ -133,22 +138,32 @@ package 'uwsgi-plugin-python' do
 	action :install
 end
 
-template '/etc/uwsgi/apps-enabled/ejrf.ini' do
-	source 'custom_ejrf_uwsgi.ini.erb'
+template "/etc/uwsgi/apps-available/#{node["user"]["name"]}.ini" do
+	source 'wsgi_app_conf.ini.erb'
+  variables ({:app => node["app"]["name"],:venv => "/home/#{node["user"]["name"]}/app/venv",:project => "/home/#{node["user"]["name"]}/app/src/#{node["user"]["name"]}"})
 end
 
-template "/etc/uwsgi/apps-available/ejrf.ini" do
-	source 'custom_ejrf_uwsgi.ini.erb'
+template "/etc/nginx/sites-available/#{node["user"]["name"]}" do
+    action :create
+    source "nginx-app.conf.erb"
+    variables ({:sock => "tmp/#{node["user"]["name"]}.sock",:app => "/home/#{node["user"]["name"]}/app/src/#{node["user"]["name"]}",:name => node["user"]["name"]})
 end
 
-execute 'Delete /var/www/sockets' do
-	command 'rm -rf /var/www/sockets'
-	action :run
+link "/etc/uwsgi/apps-enabled/#{node["user"]["name"]}.ini" do
+    to "/etc/uwsgi/apps-available/#{node["user"]["name"]}.ini"
 end
 
-execute 'create /var/www/sockets' do
-	command 'mkdir -p /var/www/ && mkdir -p /var/www/sockets'
-	action :run
+link "/etc/nginx/sites-enabled/#{node["user"]["name"]}" do
+    to "/etc/nginx/sites-available/#{node["user"]["name"]}"
+end
+
+execute  "restart uwsgi" do
+    action :run
+    command "sudo service uwsgi restart"
+end
+execute  "touch app reload " do
+    action :run
+    command "touch /home/#{node["user"]["name"]}/app/src/#{node["user"]["name"]}/reload"
 end
 
 service 'uwsgi' do

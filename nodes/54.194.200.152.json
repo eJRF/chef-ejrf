@@ -1,0 +1,8 @@
+{	"run_list":["recipes[ejrf]"],
+	"db" : {"passowrd": "un1c3f3jrf"},
+	"app": {"name":"eJRF"},
+	"user": {"name": "ejrf", "passowrd": "un1c3f3jrfus3r"},
+	"application": {"repo":"https://github.com/eJRF/ejrf.git"}
+
+
+}
