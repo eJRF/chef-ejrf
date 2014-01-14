@@ -107,6 +107,7 @@ execute "create-database" do
     not_if exists
 end
 
+
 execute "syncdb " do
     action :run
     command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py syncdb --noinput --settings=settings.prod'"
