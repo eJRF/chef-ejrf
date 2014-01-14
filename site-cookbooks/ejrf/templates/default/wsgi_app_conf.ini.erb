@@ -1,0 +1,12 @@
+[uwsgi]
+vhost = true
+plugins = python
+socket = /tmp/<%= @app %>.sock
+chmod-socket=777
+master = true
+enable-threads = true
+processes = 2
+wsgi-file = <%= @project %>/<%= @app%>/wsgi.py
+virtualenv = <%= @venv %>
+chdir = <%= @project %>
+touch-reload = <%= @project %>/reload

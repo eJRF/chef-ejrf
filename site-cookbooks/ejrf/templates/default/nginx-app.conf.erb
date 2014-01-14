@@ -1,0 +1,25 @@
+server {
+    listen          80;
+    server_name     $hostname;
+    error_log /var/log/<%= @name %>-error.log;
+    access_log /var/log/<%= @name %>-access.log;
+    client_max_body_size 105M;
+    location / {
+
+        uwsgi_pass      unix:///<%= @sock %>;
+        include         uwsgi_params;
+        uwsgi_param     UWSGI_SCHEME $scheme;
+        uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
+
+    }
+
+    location /static {
+        alias   <%= @app %>/static/;
+
+    }
+    location /media {
+        alias   <%= @app %>/media/;
+
+    }
+
+}
