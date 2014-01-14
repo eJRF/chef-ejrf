@@ -45,8 +45,8 @@ git "/vagrant/ejrf/" do
 end
 
 execute 'copy localsettings.example' do
-	cwd '/vagrant/ejrf/ejrf/'
-	command "cp localsettings.py.example localsettings.py"
+	cwd '/vagrant/eJRF/'
+	command "sudo cp localsettings.py.example localsettings.py"
 	action :run
 end
 
@@ -98,13 +98,13 @@ execute "create-database" do
 end
 
 execute'activating virtual env and installing pip requirements' do
-   cwd '/vagrant/ejrf/'
+   cwd '/vagrant/'
    command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && pip install -r pip-requirements.txt'"
    action :run
 end	
 
 execute "syncdb and run migrations" do
-    cwd '/vagrant/ejrf/'
+    cwd '/vagrant/'
     command "bash -c 'source /home/vagrant/ejrf_env/bin/activate && python manage.py syncdb --noinput && python manage.py migrate'"
     action :run
 end
