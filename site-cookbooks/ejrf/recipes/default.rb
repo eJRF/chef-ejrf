@@ -133,6 +133,10 @@ execute "create-database" do
     not_if exists
 end
 
+template "/home/#{node["user"]["name"]}/app/src/eJRF/localsettings.py" do
+  source 'setting.prod.erb'
+   variables ({:db_password => node["db"]["password"]})
+end
 
 execute "syncdb " do
     user "ejrf"

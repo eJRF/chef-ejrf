@@ -1,8 +1,0 @@
-{	"run_list":["recipe[ejrf]"],
-	"db" : {"password": "un1c3f3jrf"},
-	"app": {"name":"eJRF"},
-	"user": {"name": "ejrf", "password": "$1$jcdZdCSY$2OBcYFCE.Au.PUHv6wwDp."},
-	"application": {"repo":"https://github.com/eJRF/ejrf.git"}
-
-
-}
