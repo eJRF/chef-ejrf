@@ -175,7 +175,7 @@ end
 template "/etc/nginx/sites-available/#{node["user"]["name"]}" do
     action :create
     source "nginx-app.conf.erb"
-    variables ({:sock => "tmp/#{node["app"]["name"]}.sock",:app => "/home/#{node["user"]["name"]}/app/src/#{node["app"]["name"]}",:name => node["user"]["name"]})
+    variables ({:sock => "tmp/#{node["app"]["name"]}.sock",:app => "/home/#{node["user"]["name"]}/app/src/",:name => node["user"]["name"]})
 end
 
 link "/etc/uwsgi/apps-enabled/#{node["user"]["name"]}.ini" do
