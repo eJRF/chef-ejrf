@@ -140,10 +140,18 @@ execute "syncdb " do
     command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py syncdb --noinput '"
     action :run
 end
+
 execute "migrate " do
     user "ejrf"
     cwd "/home/#{node["user"]["name"]}/app/src/"
     command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py migrate '"
+    action :run
+end
+
+execute "collecting static in one static folder " do
+    user "ejrf"
+    cwd "/home/#{node["user"]["name"]}/app/src/"
+    command "bash -c 'source /home/#{node["user"]["name"]}/app/venv/bin/activate && python manage.py collectstatic --noinput '"
     action :run
 end
 
