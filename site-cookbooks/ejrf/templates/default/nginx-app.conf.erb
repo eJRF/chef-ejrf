@@ -3,7 +3,7 @@ server {
     server_name     $hostname;
     error_log /var/log/<%= @name %>-error.log;
     access_log /var/log/<%= @name %>-access.log;
-    client_max_body_size 105M;
+    client_max_body_size 70M;
     location / {
 
         uwsgi_pass      unix:///<%= @sock %>;
