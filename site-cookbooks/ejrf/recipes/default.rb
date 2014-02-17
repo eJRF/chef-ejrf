@@ -35,10 +35,19 @@ execute 'update system' do
    action :run
 end
 
-%w{ build-essential python-virtualenv python2.7-dev python-pip python-setuptools libpq-dev libxml2 libxml2-dev libxslt1-dev }.each do |pkg|
+%w{ build-essential python-virtualenv python2.7-dev python-pip python-setuptools libpq-dev libxml2 libxml2-dev libxslt1-dev fontconfig}.each do |pkg|
     package pkg do
 	action :install
     end
+end
+execute "install phantomjs" do
+    cwd "/usr/local/share"
+    command "sudo wget http://phantomjs.googlecode.com/files/phantomjs-1.9.2-linux-x86_64.tar.bz2 && sudo tar xjf phantomjs-1.9.2-linux-x86_64.tar.bz2"
+    action :run
+end
+
+link "/usr/bin/phantomjs" do
+    to "/usr/local/share/phantomjs-1.9.2-linux-x86_64/bin/phantomjs"
 end
 
 user node["user"]["name"] do
