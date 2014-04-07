@@ -1,3 +1,4 @@
 .vagrant
 setting.prod.erb
 54.194.205.112.json
+nodes/*

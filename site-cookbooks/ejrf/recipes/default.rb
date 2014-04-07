@@ -82,11 +82,6 @@ execute " change mod export directory to allow every user" do
     action :run
 end
 
-execute " change mod media directory to allow every user" do
-    command "chmod -R 777 /home/#{node["user"]["name"]}/app/src/media/ "
-    action :run
-end
-
 execute "setup virtualenv for application" do
     command "virtualenv --no-site-packages /home/#{node["user"]["name"]}/app/venv/"
     action :run
